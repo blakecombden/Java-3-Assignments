@@ -61,8 +61,8 @@ public class Book {
     public void addAuthor(Author author){ this.authorList.add(author); }
 
     public static void printBook(PrintStream printStream, Book book){
-        printStream.printf("\n%s, %s, %d, %S", book.getIsbn(), book.getTitle(),
-                book.getEditionNumber(), book.getCopyright());
+        printStream.printf("\n%s, Edition %d (%s) ISBN: %S", book.getTitle(), book.getEditionNumber(),
+                book.getCopyright(), book.getIsbn());
         book.authorList.forEach(author -> System.out.printf("\n\t%s, %s", author.getLastName(), author.getFirstName()));
     }
 }

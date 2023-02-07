@@ -19,13 +19,20 @@ public class BookDatabaseManager {
 
     public static Library loadLibrary(){
         Library library = new Library();
-        Connection connection = DBConfig.getConnection();
-        // Load in the book and author lists
-        library.setBookList(loadBookList(connection));
-        library.setAuthorList(loadAuthorList(connection));
+        try{
+            Connection connection = DBConfig.getConnection();
 
-        buildRelationships(connection, library.getBookList(), library.getAuthorList());
+            // load in the book and author lists
+            library.setBookList(loadBookList(connection));
+            library.setAuthorList(loadAuthorList(connection));
 
+            // build relationships between tables
+            buildRelationships(connection, library.getBookList(), library.getAuthorList());
+
+            connection.close();
+        } catch (SQLException sqlException) {
+            sqlException.printStackTrace();
+        }
         return library;
     }
 
@@ -36,9 +43,11 @@ public class BookDatabaseManager {
     private static List<Book> loadBookList(Connection connection){
         LinkedList<Book> bookLinkedList = new LinkedList<>();
         try{
+            // create query string and execute
             Statement statement = connection.createStatement();
             String sql = "SELECT * FROM " + DBConfig.DB_BOOKS_TITLES_TABLE_NAME + ";";
             ResultSet resultSet = statement.executeQuery(sql);
+
             // create book objects using result set and add to list
             while(resultSet.next()){
                 bookLinkedList.add(
@@ -49,7 +58,9 @@ public class BookDatabaseManager {
                                 resultSet.getString(DBConfig.DB_BOOKS_TITLES_COPYRIGHT))
                 );
             }
+
             statement.close();
+
         } catch (SQLException sqlException){
             sqlException.printStackTrace();
         }
@@ -63,9 +74,11 @@ public class BookDatabaseManager {
     private static List<Author> loadAuthorList(Connection connection){
         LinkedList<Author> authorLinkedList = new LinkedList<>();
         try{
+            // create query string and execute
             Statement statement = connection.createStatement();
             String sql = "SELECT * FROM " + DBConfig.DB_BOOKS_AUTHORS_TABLE_NAME + ";";
             ResultSet resultSet = statement.executeQuery(sql);
+
             // create author objects using result set and add to list
             while(resultSet.next()){
                 authorLinkedList.add(
@@ -75,15 +88,15 @@ public class BookDatabaseManager {
                                 resultSet.getString(DBConfig.DB_BOOKS_AUTHORS_LAST_NAME))
                 );
             }
+
             statement.close();
+
         } catch (SQLException sqlException){
             sqlException.printStackTrace();
         }
 
         return authorLinkedList;
     }
-
-    //TODO perhaps make this private and call it in the previous methods
 
     /**
      * Build the relationships between the objects passed using the bridge table
@@ -94,12 +107,12 @@ public class BookDatabaseManager {
     private static void buildRelationships(Connection connection, List<Book> bookList, List<Author> authorList){
         //TODO write this method: query the bridge table, query the two object lists that you pass in, and connect.
         try{
+            // create query string and execute
             Statement statement = connection.createStatement();
             String sql = "SELECT * FROM " + DBConfig.DB_BOOKS_AUTHORS_ISBN_TABLE_NAME + ";";
             ResultSet resultSet = statement.executeQuery(sql);
 
             while(resultSet.next()){
-
                 // get IDs
                 int authorID = resultSet.getInt(DBConfig.DB_BOOKS_AUTHORS_AUTHOR_ID);
                 String isbn = resultSet.getString(DBConfig.DB_BOOKS_TITLES_ISBN);
@@ -112,13 +125,70 @@ public class BookDatabaseManager {
                 author.addBook(book);
                 book.addAuthor(author);
             }
+
             statement.close();
+
         } catch (SQLException sqlException){
             sqlException.printStackTrace();
         }
     }
+    public static void saveBook(Book book, Author author){
+        try{
+            Connection connection = DBConfig.getConnection();
 
-    //TODO write the unload / save version of these methods
+            // initialize query and preparedstatement variables
+            String sql = "";
+            PreparedStatement preparedStatement = null;
 
-    //TODO write the private query methods
+            // code INSERT INTO statement for titles table and corresponding indexes
+            sql = "INSERT INTO titles (isbn, title, editionNumber, copyright) VALUES (?, ?, ?, ?)";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, book.getIsbn());
+            preparedStatement.setString(2, book.getTitle());
+            preparedStatement.setInt(3, book.getEditionNumber());
+            preparedStatement.setString(4, book.getCopyright());
+
+            // execute statement
+            preparedStatement.executeUpdate();
+
+            // code INSERT INTO statement for authorISBN table and corresponding indexes
+            sql = "INSERT INTO authorISBN (authorID, isbn) VALUES (?, ?)";
+            preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setInt(1, author.getAuthorID());
+            preparedStatement.setString(2, book.getIsbn());
+
+            // execute statement
+            preparedStatement.executeUpdate();
+
+            preparedStatement.close();
+
+        } catch (SQLException sqlException){
+            sqlException.printStackTrace();
+        }
+    }
+    public static void saveAuthor(Author author){
+        try{
+            Connection connection = DBConfig.getConnection();
+
+            // initialize query and preparedstatement variables
+            String sql = "";
+            PreparedStatement preparedStatement = null;
+
+            // code insert into statement for authors table and corresponding indexes
+            sql = "INSERT INTO authors (firstName, lastName) VALUES (?, ?)";
+            preparedStatement = connection.prepareStatement(sql);
+
+            //preparedStatement.setString(1, DBConfig.DB_BOOKS_AUTHORS_TABLE_NAME);
+            preparedStatement.setString(1, author.getFirstName());
+            preparedStatement.setString(2, author.getLastName());
+
+            // execute statement
+            preparedStatement.executeUpdate();
+
+            preparedStatement.close();
+
+        } catch (SQLException sqlException){
+            sqlException.printStackTrace();
+        }
+    }
 }

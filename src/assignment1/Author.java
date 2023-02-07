@@ -1,5 +1,6 @@
 package assignment1;
 
+import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,5 +38,12 @@ public class Author {
 
     public List<Book> getBookList() { return bookList; }
 
-    public void addBook(Book book){ this.bookList.add(book); }
+    public void addBook(Book book) { this.bookList.add(book); }
+
+    public static void printAuthor(PrintStream printStream, Author author) {
+        printStream.printf("\n%s %s (ID %d)", author.getFirstName(),
+                author.getLastName(), author.getAuthorID());
+        author.bookList.forEach(book -> System.out.printf("\n\t%s, Edition: %d (%S) ISBN: %s", book.getTitle(),
+                book.getEditionNumber(), book.getCopyright(), book.getIsbn()));
+    }
 }
